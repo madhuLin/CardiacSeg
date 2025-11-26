@@ -1,0 +1,14 @@
+log/
+__pycache__/
+evals/
+hsin_wei/
+logs/
+logs_cli/
+logs_cli_1/
+runs/
+yolo/
+myo_pred/
+models/
+models_1/
+*.zip
+
