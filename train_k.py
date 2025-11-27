@@ -85,6 +85,14 @@ def main():
         "--data_dict_file_name",
         default="AICUP_training_50_1.json",  # 或你小資料 AICUP_training_3.json
     )
+    
+    parser.add_argument(
+        "--kfold",
+        type=int,
+        default=1,
+        help="使用 K-fold training。k>1 時，會自動載入 AICUP_training_50_foldX.json，並在 exp_name 後加 _fX。",
+    )
+
 
     # 訓練相關共用預設（可被每個 experiment override）
     parser.add_argument("--start_epoch", type=int, default=0)
@@ -192,58 +200,85 @@ def main():
         model_name = cfg["model_name"]
         params = cfg.get("params", {})
 
-        args.exp_name = exp_id
-        args.model_name = model_name
+        # k-fold 外層
+        k = max(1, args.kfold)
+        for fold_idx in range(1, k + 1):
+            # 如果是 k-fold，就換不同 data_dict JSON & exp_name
+            if k > 1:
+                data_dict_name = f"AICUP_training_50_fold{fold_idx}.json"
+                exp_name = f"{exp_id}_f{fold_idx}"
+            else:
+                data_dict_name = args.data_dict_file_name
+                exp_name = exp_id
 
-        # 用 config 覆蓋共用設定
-        for k, v in params.items():
-            if hasattr(args, k):
-                setattr(args, k, v)
+            args.exp_name = exp_name
+            args.model_name = model_name
 
-        # 每個實驗自己的 model/log/eval 資料夾
-        args.model_dir = model_root / exp_id
-        args.log_dir = log_root / exp_id
-        args.eval_dir = eval_root / exp_id
-        for p in [args.model_dir, args.log_dir, args.eval_dir]:
-            p.mkdir(parents=True, exist_ok=True)
+            # data_dicts_json 路徑
+            args.data_dicts_json = (
+                args.workspace_dir
+                / "exps"
+                / "data_dicts"
+                / args.data_name
+                / data_dict_name
+            )
 
-        args.best_checkpoint = args.model_dir / "best_model.pth"
-        args.final_checkpoint = args.model_dir / "final_model.pth"
+            # 用 config 覆蓋共用設定
+            for k_param, v in params.items():
+                if hasattr(args, k_param):
+                    setattr(args, k_param, v)
 
-        train_cmd = [
-            sys.executable,
-            str(tune_py),
-            "--tune_mode=train",
-            f"--start_epoch={args.start_epoch}",
-            f"--val_every={args.val_every}",
-            f"--max_early_stop_count={args.max_early_stop_count}",
-            f"--max_epoch={params.get('max_epoch', args.max_epoch)}",
-        ] + build_common_args(args)
+            # 每個實驗自己的 model/log/eval 資料夾
+            args.model_dir = model_root / exp_name
+            args.log_dir = log_root / exp_name
+            args.eval_dir = eval_root / exp_name
+            for p in [args.model_dir, args.log_dir, args.eval_dir]:
+                p.mkdir(parents=True, exist_ok=True)
 
-        # 這個實驗的 console log 檔
-        log_file = cli_log_root / f"{exp_id}.log"
+            args.best_checkpoint = args.model_dir / "best_model.pth"
+            args.final_checkpoint = args.model_dir / "final_model.pth"
 
-        print(f"\n===== [RUN] {exp_id} | model={model_name} =====")
-        print(f"[INFO] log 檔案：{log_file}")
+            train_cmd = [
+                sys.executable,
+                str(tune_py),
+                "--tune_mode=train",
+                f"--start_epoch={args.start_epoch}",
+                f"--val_every={args.val_every}",
+                f"--max_early_stop_count={args.max_early_stop_count}",
+                f"--max_epoch={params.get('max_epoch', args.max_epoch)}",
+            ] + build_common_args(args)
 
-        with open(log_file, "w") as lf:
-            try:
-                # 把 stdout, stderr 都寫進 log，不要噴在螢幕
-                subprocess.run(
-                    train_cmd,
-                    stdout=lf,
-                    stderr=subprocess.STDOUT,
-                    env=base_env,
-                    check=True,
-                )
-                print(f"[OK] {exp_id} 完成（詳細請看 log）")
-            except subprocess.CalledProcessError as e:
-                print(f"[ERROR] {exp_id} 訓練失敗，請看 {log_file}")
-                # 繼續跑下一個模型
-                continue
+            log_file = cli_log_root / f"{exp_name}.log"
+
+            print(f"\n===== [RUN] {exp_name} | model={model_name} =====")
+            print(f"[INFO] 使用 data_dicts_json: {args.data_dicts_json}")
+            print(f"[INFO] log 檔案：{log_file}")
+
+            with open(log_file, "w") as lf:
+                try:
+                    subprocess.run(
+                        train_cmd,
+                        stdout=lf,
+                        stderr=subprocess.STDOUT,
+                        env=base_env,
+                        check=True,
+                    )
+                    print(f"[OK] {exp_name} 完成（詳細請看 log）")
+                except subprocess.CalledProcessError:
+                    print(f"[ERROR] {exp_name} 訓練失敗，請看 {log_file}")
+                    continue
 
     print("\n[INFO] 所有實驗都已嘗試執行完畢。")
 
 
 if __name__ == "__main__":
     main()
+
+"""
+python run_all_models.py \
+  --data_name chgh \
+  --kfold 5
+  
+  python run_all_models.py \
+  --kfold 5
+"""

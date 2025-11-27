@@ -1,5 +1,5 @@
 {
-    "test": [
+    "train": [
         {
             "image": "patient0001.nii.gz",
             "label": "patient0001_gt.nii.gz"
@@ -19,9 +19,7 @@
         {
             "image": "patient0005.nii.gz",
             "label": "patient0005_gt.nii.gz"
-        }
-    ],
-    "train": [
+        },
         {
             "image": "patient0006.nii.gz",
             "label": "patient0006_gt.nii.gz"
@@ -161,9 +159,7 @@
         {
             "image": "patient0040.nii.gz",
             "label": "patient0040_gt.nii.gz"
-        }
-    ],
-    "val": [
+        },
         {
             "image": "patient0041.nii.gz",
             "label": "patient0041_gt.nii.gz"
@@ -204,5 +200,8 @@
             "image": "patient0050.nii.gz",
             "label": "patient0050_gt.nii.gz"
         }
+    ],
+    "validation": [
+        
     ]
 }

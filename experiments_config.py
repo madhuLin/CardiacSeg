@@ -3,7 +3,7 @@ EXPERIMENTS = {
     # CNN 類（顯存安全）
     # -------------------------
     "AICUP_unet3d_base": {
-        "enabled": True,
+        "enabled": False,
         "vote": True,
         "model_name": "unet3d",
         "params": {
