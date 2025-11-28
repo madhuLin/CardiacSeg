@@ -279,6 +279,8 @@ python run_all_models.py \
   --data_name chgh \
   --kfold 5
   
-  python run_all_models.py \
+  python train_k.py \
+--data_name chgh \
+  --exp_ids AICUP_uxnet_small \
   --kfold 5
 """

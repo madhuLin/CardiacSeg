@@ -176,7 +176,7 @@ def main():
     logs_dir.mkdir(parents=True, exist_ok=True)
 
     # 每個實驗 id 依序處理
-for exp_id in exp_ids:
+    for exp_id in exp_ids:
         # 支援 K-fold 命名：例如 AICUP_attention_unet_f1
         if "_f" in exp_id:
             base_id = exp_id.split("_f")[0]
@@ -249,9 +249,9 @@ for exp_id in exp_ids:
 
             run(cmd, log_file)
 
-    print("\n[INFO] 所有模型推論結束。")
-    print("[INFO] 推論結果在：", args.infer_root)
-    print("[INFO] log 檔在：", logs_dir)
+        print("\n[INFO] 所有模型推論結束。")
+        print("[INFO] 推論結果在：", args.infer_root)
+        print("[INFO] log 檔在：", logs_dir)
 
 
 if __name__ == "__main__":
@@ -261,13 +261,22 @@ if __name__ == "__main__":
 # python run_infer_config.py --data_name chgh --infer_post_process
 # AICUP_swinunetr
 """
-python run_ensemble_vote.py \
+python infer_k.py \
   --data_name chgh \
   --exp_ids \
-    AICUP_unet3d_base_f1 AICUP_unet3d_base_f2 AICUP_unet3d_base_f3 AICUP_unet3d_base_f4 AICUP_unet3d_base_f5 \
+   AICUP_uxnet_small_f1 AICUP_uxnet_small_f2 AICUP_uxnet_small_f3 AICUP_uxnet_small_f4 AICUP_uxnet_small_f5 \   
+  --infer_post_process
+  
+python infer_k.py \
+  --data_name chgh \
+  --exp_ids \
     AICUP_attention_unet_f1 AICUP_attention_unet_f2 AICUP_attention_unet_f3 AICUP_attention_unet_f4 AICUP_attention_unet_f5 \
     AICUP_dynunet_f1 AICUP_dynunet_f2 AICUP_dynunet_f3 AICUP_dynunet_f4 AICUP_dynunet_f5 \
     AICUP_swinunetr_f1 AICUP_swinunetr_f2 AICUP_swinunetr_f3 AICUP_swinunetr_f4 AICUP_swinunetr_f5 \
-    AICUP_uxnet_small_f1 AICUP_uxnet_small_f2 AICUP_uxnet_small_f3 AICUP_uxnet_small_f4 AICUP_uxnet_small_f5 \
-  --ensemble_name all_models_k5
+    
+  --infer_post_process
+  
+  
+  --ensemble_name all_models_k5 \
+  
 """

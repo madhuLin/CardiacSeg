@@ -326,4 +326,23 @@ python run_ensemble_vote.py \
     AICUP_uxnet_small \
   --ensemble_name myo_focus \
   --class_weights 1.0 1.0 2.0 1.0
+  
+  
+  python run_ensemble_vote.py \
+  --data_name chgh \
+  --exp_ids \
+    AICUP_attention_unet_f1 AICUP_attention_unet_f2 AICUP_attention_unet_f3 AICUP_attention_unet_f4 AICUP_attention_unet_f5 \
+    AICUP_dynunet_f1 AICUP_dynunet_f2 AICUP_dynunet_f3 AICUP_dynunet_f4 AICUP_dynunet_f5 \
+    AICUP_swinunetr_f1 AICUP_swinunetr_f2 AICUP_swinunetr_f3 AICUP_swinunetr_f4 AICUP_swinunetr_f5 \
+  --ensemble_name k5
+  --class_weights 1.0 1.0 2.0 1.0
+  
+    python run_ensemble_vote.py \
+  --data_name chgh \
+  --exp_ids \
+    AICUP_attention_unet_f1 AICUP_attention_unet_f2 \
+    AICUP_dynunet_f1  \
+    AICUP_swinunetr_f1 \
+  --ensemble_name all_models_k5
+  --class_weights 1.0 1.0 2.0 1.0
 """
