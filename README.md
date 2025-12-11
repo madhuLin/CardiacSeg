@@ -104,3 +104,109 @@ Once you have a trained model, you can use one of the inference scripts to gener
     ```
 
     The segmentation results will be saved in the `myo_pred/chgh/infer/<preset_name>/` directory.
+
+## Advanced Scripts Usage
+
+For more fine-grained control over the pipeline, you can use the following scripts. These scripts are designed to work with the `experiments_config.py` file, which acts as a central hub for defining and managing different model configurations.
+
+### `experiments_config.py`
+
+This file is not a script to be executed, but a configuration file that defines the hyperparameters for each experiment. Before running the scripts below, you should review and edit this file to enable the models you want to work with and adjust their parameters.
+
+```python
+EXPERIMENTS = {
+    "AICUP_attention_unet": {
+        "enabled": True,  # Set to True to run this model
+        "vote": True,     # Set to True to include in ensemble voting
+        "model_name": "attention_unet",
+        "params": {
+            "roi_z": 112,
+            "lr": 1e-4,
+            # ... other parameters
+        },
+    },
+    # ... other experiments
+}
+```
+
+### `gen_kfold_splits.py`
+
+This script generates JSON files for k-fold cross-validation. It takes a main data dictionary JSON and splits the training set into `k` folds, creating `k` new JSON files.
+
+**Usage:**
+
+```bash
+python gen_kfold_splits.py \
+  --workspace_dir /path/to/your/CardiacSegV2 \
+  --input_json AICUP_training_50.json \
+  --kfold 5
+```
+
+This will create `AICUP_training_50_fold1.json`, `..._fold2.json`, etc., in the `CardiacSegV2/exps/data_dicts/chgh/` directory.
+
+### `train_k.py` (and `run_all_models.py`)
+
+`train_k.py` is the primary, recommended script for running training sessions. It reads experiment settings from `experiments_config.py` and can train one or more models, with full support for k-fold cross-validation.
+
+The older `run_all_models.py` script provides similar functionality but **lacks k-fold support**. It is recommended to use `train_k.py` for all training tasks, as it is more versatile.
+
+**Usage:**
+
+-   **Train specific models across all 5 folds:**
+
+    ```bash
+    python train_k.py \
+      --exp_ids AICUP_attention_unet AICUP_dynunet \
+      --kfold 5
+    ```
+
+-   **Train all `enabled=True` models for a single run (equivalent to `run_all_models.py`):**
+
+    ```bash
+    python train_k.py --kfold 1
+    ```
+    *(Note: Using `--kfold 1` or omitting it trains on a single data split, making it behave like the older `run_all_models.py` script.)*
+
+Trained models and logs will be saved under `models/<exp_name>_f<fold_number>/` and `logs_cli/<exp_name>_f<fold_number>.log`.
+
+### `run_infer_config.py`
+
+After training, this script runs inference on a directory of images using the models defined in `experiments_config.py`. It will automatically find the best checkpoint for each specified experiment.
+
+**Usage:**
+
+```bash
+python run_infer_config.py \
+  --images_dir /path/to/your/nifti_images \
+  --exp_ids AICUP_attention_unet_f1 AICUP_dynunet_f1
+```
+
+- If `--exp_ids` is not provided, it will run inference for all models where `"vote": True` is set in the config.
+- Inference results are saved to `myo_pred/<data_name>/infer/<exp_id>/`.
+
+### `run_ensemble_vote.py`
+
+This script performs voxel-wise voting to ensemble the predictions from multiple models, which can improve segmentation accuracy.
+
+**Usage:**
+
+-   **Majority Vote:**
+    Combines predictions from several models with equal weight.
+
+    ```bash
+    python run_ensemble_vote.py \
+      --exp_ids AICUP_attention_unet_f1 AICUP_dynunet_f1 AICUP_swinunetr_f1 \
+      --ensemble_name my_3_models_ensemble
+    ```
+
+-   **Weighted Vote:**
+    You can assign weights to models (e.g., based on their validation Dice scores) and also apply weights to specific classes (e.g., giving more importance to the myocardium).
+
+    ```bash
+    python run_ensemble_vote.py \
+      --exp_ids AICUP_attention_unet_f1 AICUP_dynunet_f1 \
+      --weight AICUP_attention_unet_f1=0.85 --weight AICUP_dynunet_f1=0.83 \
+      --class_weights 1.0 1.0 2.0 1.0 \
+      --ensemble_name weighted_myo_focus
+    ```
+The output is a new set of segmentation files saved in `myo_pred/<data_name>/infer/ensemble_<ensemble_name>/`.
